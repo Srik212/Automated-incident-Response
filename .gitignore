@@ -1,0 +1,21 @@
+# Environment
+.env
+*.pyc
+__pycache__/
+
+# ELK data
+elasticsearch-data/
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Evidence (generated at runtime)
+evidence-output/
