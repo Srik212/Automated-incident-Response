@@ -3,6 +3,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /app/logs /app/data
+ENV LOG_DIR=/app/logs
+ENV DATA_DIR=/app/data
 COPY app.py .
 EXPOSE 5000
 ENV FLASK_DEBUG=1
