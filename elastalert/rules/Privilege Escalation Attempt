@@ -1,0 +1,33 @@
+# Rule: Privilege Escalation Attempt
+# Detects non-admin users attempting to access admin endpoints
+# MITRE ATT&CK: T1068 — Exploitation for Privilege Escalation
+
+name: "CRITICAL — Privilege Escalation Attempt"
+
+# 'any' type — alert on EVERY single match
+# Privilege escalation is serious enough to alert every time
+type: any
+
+index: ir-security-events-*
+
+filter:
+  - term:
+      event_type: "privilege_escalation"
+
+alert:
+  - debug
+
+alert_text: |
+  PRIVILEGE ESCALATION ATTEMPT
+
+  MITRE ATT&CK: T1068 — Exploitation for Privilege Escalation
+  Severity: CRITICAL
+
+  A non-admin user attempted to access an admin-only endpoint.
+  This could indicate an attacker testing for authorization flaws.
+
+  Action Required:
+  - Investigate the user account immediately
+  - Check if the account has been compromised
+  - Review recent activity from this user
+  - Consider temporarily disabling the account

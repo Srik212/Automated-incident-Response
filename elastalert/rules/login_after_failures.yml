@@ -1,0 +1,46 @@
+# Rule: Successful Login After Multiple Failures
+# Detects a login success that follows multiple failures
+# MITRE ATT&CK: T1110 — Brute Force (successful compromise)
+
+name: "CRITICAL — Successful Login After Failed Attempts"
+
+type: frequency
+
+index: ir-security-events-*
+
+num_events: 3
+
+timeframe:
+  minutes: 5
+
+filter:
+  - term:
+      event_type: "login_failure"
+
+alert:
+  - debug
+
+# After this alert fires, run a second query to check
+# if a login_success followed for the same target
+alert_text: |
+  POTENTIAL ACCOUNT COMPROMISE
+
+  MITRE ATT&CK: T1110 — Brute Force
+  Severity: CRITICAL
+
+  Multiple failed login attempts detected followed by
+  activity on the same account. This pattern indicates
+  a brute force attack may have succeeded.
+
+  Number of failed attempts: {0}
+  Time window: 5 minutes
+
+  IMMEDIATE Action Required:
+  - Check if a successful login followed these failures
+  - If yes — assume the account is compromised
+  - Force password reset on the affected account
+  - Review all activity from the compromised session
+  - Preserve logs for forensic analysis
+
+alert_text_args:
+  - num_hits

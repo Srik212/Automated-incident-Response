@@ -1,0 +1,44 @@
+# Rule: Unauthorized Access — No Token
+# Detects attempts to access protected endpoints without authentication
+# MITRE ATT&CK: T1190 — Exploit Public-Facing Application
+
+name: "HIGH — Unauthorized Access Attempt (No Token)"
+
+type: frequency
+
+index: ir-security-events-*
+
+num_events: 3
+
+timeframe:
+  minutes: 5
+
+filter:
+  - term:
+      event_type: "access_denied"
+
+alert:
+  - debug
+
+alert_text: |
+  UNAUTHORIZED ACCESS ATTEMPTS
+
+  MITRE ATT&CK: T1190 — Exploit Public-Facing Application
+  Severity: HIGH
+
+  Multiple attempts to access protected endpoints without
+  authentication tokens detected. This could indicate:
+  - API endpoint enumeration/scanning
+  - Automated vulnerability scanner running
+  - Misconfigured client application
+
+  Number of attempts: {0}
+  Time window: 5 minutes
+
+  Action Required:
+  - Review which endpoints were targeted
+  - Check for patterns indicating automated scanning
+  - Consider implementing IP-based rate limiting
+
+alert_text_args:
+  - num_hits

@@ -1,5 +1,6 @@
-version: '3.8'
+
 services:
+
   # Layer 1 — The Target
   vulnerable-app:
     build:
@@ -18,9 +19,9 @@ services:
       - "ir.layer=target"
     restart: unless-stopped
 
-  
+
   # Layer 2 — The Eyes (ELK Stack)
-  
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     container_name: ir-elasticsearch
@@ -42,6 +43,7 @@ services:
       retries: 5
     restart: unless-stopped
 
+
   logstash:
     image: docker.elastic.co/logstash/logstash:8.13.0
     container_name: ir-logstash
@@ -57,6 +59,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+
   kibana:
     image: docker.elastic.co/kibana/kibana:8.13.0
     container_name: ir-kibana
@@ -71,10 +74,12 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.13.0
     container_name: ir-filebeat
     user: root
+    command: filebeat -e -strict.perms=false
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - app-logs:/app/logs:ro
@@ -88,12 +93,50 @@ services:
     restart: unless-stopped
 
 
-# Networks
+  # Layer 3 — ElastAlert Init (creates required indices)
+  elastalert-init:
+    image: curlimages/curl:latest
+    container_name: ir-elastalert-init
+    command: >
+      sh -c "
+      curl -s -X PUT http://elasticsearch:9200/elastalert_status &&
+      curl -s -X PUT http://elasticsearch:9200/elastalert_status_error &&
+      curl -s -X PUT http://elasticsearch:9200/elastalert_status_silence &&
+      curl -s -X PUT http://elasticsearch:9200/elastalert_status_past &&
+      curl -s -X PUT http://elasticsearch:9200/elastalert_status_runs
+      "
+    networks:
+      - ir-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
 
+
+  # Layer 3 — ElastAlert (alerting engine)
+  elastalert:
+    image: jertel/elastalert2:2.19.0
+    container_name: ir-elastalert
+    entrypoint: ["python", "-m", "elastalert.elastalert"]
+    environment:
+      - ES_HOST=elasticsearch
+      - ES_PORT=9200
+    volumes:
+      - ./elastalert/config.yaml:/opt/elastalert/config.yaml:ro   # ✅ FILE mount
+      - ./elastalert/rules:/opt/elastalert/rules:ro
+      - elastalert-logs:/opt/elastalert/logs
+    command: ["--config", "/opt/elastalert/config.yaml", "--verbose"]
+    networks:
+      - ir-network
+    depends_on:
+      elastalert-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
 networks:
   ir-network:
     driver: bridge
     name: ir-pipeline-network
+
 
 # Volumes
 volumes:
@@ -102,4 +145,6 @@ volumes:
   app-logs:
     driver: local
   app-data:
+    driver: local
+  elastalert-logs:
     driver: local

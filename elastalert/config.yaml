@@ -1,0 +1,18 @@
+es_host: "elasticsearch"
+es_port: 9200
+use_ssl: false
+verify_certs: false
+
+run_every:
+  seconds: 30
+
+buffer_time:
+  minutes: 15
+
+rules_folder: /opt/elastalert/rules
+
+writeback_index: elastalert_status
+writeback_alias: elastalert_alerts
+
+alert_time_limit:
+  days: 2

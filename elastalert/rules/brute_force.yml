@@ -1,0 +1,53 @@
+# Rule: Brute Force Login Detection
+# Detects multiple failed login attempts within a short time window
+# MITRE ATT&CK: T1110.001 — Brute Force: Password Guessing
+
+# Rule name — shows up in alerts
+name: "CRITICAL — Brute Force Login Detected"
+
+# Rule type — 'frequency' means "alert when X events happen in Y time"
+type: frequency
+
+# Which Elasticsearch index to search
+index: ir-security-events-*
+
+# How many events trigger the alert
+num_events: 5
+
+# Within what time window
+timeframe:
+  minutes: 2
+
+# What to search for
+filter:
+  - term:
+      event_type: "login_failure"
+
+# Group alerts by source IP
+# This means 5 failures from the SAME IP trigger an alert
+# 5 failures from different IPs don't
+query_key: "source_ip"
+
+# What to do when the rule fires
+alert:
+  - debug
+
+# What information to include in the alert
+alert_text: |
+  BRUTE FORCE DETECTED
+
+  MITRE ATT&CK: T1110.001 — Brute Force: Password Guessing
+  Severity: MEDIUM
+
+  Source IP: {0}
+  Number of failed attempts: {1}
+  Time window: 2 minutes
+
+  Action Required:
+  - Investigate the source IP
+  - Check if any login succeeded after the failures
+  - Consider blocking the IP
+
+alert_text_args:
+  - source_ip
+  - num_hits

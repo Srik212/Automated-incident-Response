@@ -1,0 +1,35 @@
+# Rule: Admin Configuration Change
+# Detects changes to application configuration via admin endpoint
+# MITRE ATT&CK: T1059 — Command and Scripting Interpreter
+
+name: "HIGH — Admin Configuration Change Detected"
+
+type: any
+
+index: ir-security-events-*
+
+filter:
+  - term:
+      event_type: "admin_config_change"
+
+alert:
+  - debug
+
+alert_text: |
+  ADMIN CONFIGURATION CHANGE
+
+  MITRE ATT&CK: T1059 — Command and Scripting Interpreter
+  Severity: HIGH
+
+  An admin user modified application configuration.
+  The admin config endpoint is vulnerable to command injection.
+  This could indicate:
+  - Legitimate configuration change (verify with admin)
+  - Attacker with compromised admin credentials
+  - Command injection attempt via backup_path parameter
+
+  Action Required:
+  - Verify the change was authorized
+  - Review the config value for suspicious commands
+  - Check if backup_path was modified (command injection risk)
+  - Audit admin account activity
