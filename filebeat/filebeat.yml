@@ -1,0 +1,30 @@
+# Filebeat Configuration — Automated IR Pipeline
+# Collects logs from SecureBank API and Docker containers
+
+filebeat.inputs:
+  # SecureBank API application logs
+  - type: log
+    enabled: true
+    paths:
+      - /app/logs/securebank.log
+    fields:
+      source_app: securebank-api
+      pipeline: ir-pipeline
+    fields_under_root: true
+
+  # Docker container logs
+  - type: container
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+
+# Ship logs to Logstash
+output.logstash:
+  hosts: ["logstash:5044"]
+
+# Logging
+logging.level: info
+logging.to_files: false
