@@ -1,0 +1,55 @@
+name: SecureBank Security Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  # Gate 1 — Secret Scanning (Gitleaks)
+  secret-scanning:
+    name: "Gate 1 — Secret Scanning"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Gate 2 — SAST (Bandit)
+
+  sast:
+    name: "Gate 2 — SAST (Bandit)"
+    runs-on: ubuntu-latest
+    needs: secret-scanning
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit scan
+        run: |
+          bandit -r vulnerable-app/ -f json -o bandit-report.json || true
+          bandit -r vulnerable-app/ -f txt
+        continue-on-error: false
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-sast-report
+          path: bandit-report.json
