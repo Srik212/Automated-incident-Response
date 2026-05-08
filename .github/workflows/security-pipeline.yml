@@ -98,7 +98,9 @@ jobs:
         uses: aquasecurity/trivy-action@v0.2.0
 
       - name: Build Docker image
-        run: docker build -t securebank-app:vulnerable .
+        run: |
+          cd vulnerable-app
+          docker build -t securebank-app:vulnerable .
 
       - name: Run Trivy scan
         run: trivy image --format json --output trivy-report.json securebank-app:vulnerable || true
