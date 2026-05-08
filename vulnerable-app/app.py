@@ -18,8 +18,8 @@ Vulnerabilities included:
 
 import os
 import sqlite3
-import subprocess
-import datetime
+#import subprocess
+#import datetime
 import logging
 import uuid
 import json
@@ -36,10 +36,10 @@ import jwt
 app = Flask(__name__)
 
 # VULNERABILITY: Weak JWT secret — easily brute-forced
-app.config["SECRET_KEY"] = "super-secret-key-123"
+#app.config["SECRET_KEY"] = "super-secret-key-123"
 
 # VULNERABILITY: Debug mode enabled — exposes stack traces
-app.config["DEBUG"] = True
+app.config["DEBUG"] = False
 
 # ============================================================
 # Paths Configuration
@@ -416,7 +416,7 @@ def transfer():
 
     # VULNERABILITY: SQL injection — amount is concatenated directly
     try:
-        db.execute(
+        '''db.execute(
             "UPDATE accounts SET balance = balance - "
             + str(amount)
             + " WHERE id = '"
@@ -429,6 +429,15 @@ def transfer():
             + " WHERE id = '"
             + to_account
             + "'"
+        )'''
+        db.execute(
+            "UPDATE accounts SET balance = balance - ? WHERE id = ?",
+            (amount, account_id)
+        )
+
+        db.execute(
+            "UPDATE accounts SET balance = balance + ? WHERE id = ?",
+            (amount, account_id)
         )
 
         transaction_id = str(uuid.uuid4())
@@ -559,11 +568,11 @@ def update_config():
     value = data["value"]
 
     # VULNERABILITY: Command injection — value passed to subprocess
-    if key == "backup_path":
+    '''if key == "backup_path":
         try:
             result = subprocess.run(
                 f"ls {value}",
-                shell=True,
+                shell=False,  # VULNERABILITY: shell=True allows command injection
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -589,7 +598,22 @@ def update_config():
                 str(e),
                 g.current_user["username"],
                 request.remote_addr,
-            )
+            )'''
+    import pathlib
+
+ALLOWED_BACKUP_ROOT = pathlib.Path("/var/backups/app").resolve()
+
+def list_backup_path(user_value: str) -> list[str]:
+    target = (ALLOWED_BACKUP_ROOT / user_value).resolve()
+
+    # Prevent path traversal: ensure the resolved path stays inside the allowed root
+    if not str(target).startswith(str(ALLOWED_BACKUP_ROOT)):
+        raise ValueError(f"Access denied: path outside allowed root — {target}")
+
+    if not target.is_dir():
+        raise ValueError(f"Not a directory: {target}")
+
+    return [entry.name for entry in target.iterdir()]
 
     db = get_db()
     db.execute(
@@ -634,4 +658,4 @@ if __name__ == "__main__":
     logger.info("DATABASE_INIT: Database initialized successfully")
 
     # VULNERABILITY: Binding to all interfaces + debug mode
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=False)
