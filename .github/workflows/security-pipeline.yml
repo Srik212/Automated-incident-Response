@@ -160,6 +160,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [sca, trivy, iac-scanning]
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up OWASP ZAP
         run: |
           docker pull ghcr.io/zaproxy/zaproxy:latest
